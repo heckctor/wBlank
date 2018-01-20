@@ -1,0 +1,18 @@
+{
+  "name": "jblank",
+  "description": "wBlank",
+  "main": "index.js",
+  "authors": [
+    "Hektor Peña"
+  ],
+  "license": "MIT",
+  "homepage": "http://hektor.com.mx",
+  "private": true,
+  "dependencies": {
+    "jquery": "^3.2.1",
+    "bulma": "^0.6.1",
+    "normalize-strings": "normalize#^1.1.0",
+    "font-awesome": "^4.7.0",
+    "css-hamburgers": "^0.9.1"
+  }
+}
