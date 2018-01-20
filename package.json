@@ -1,15 +1,12 @@
 {
   "name": "wBlank",
   "version": "1.0.0",
-  "description": "Plantilla en blanco Wordpress",
+  "description": "Plantilla en blanco para Wordpress",
   "main": "index.js",
-  "repository": {
-    "url": "https://github.com/heckctor/wBlank.git",
-    "type": "git"
-  },
+  "repository": "https://github.com/heckctor/wBlank.git",
   "author": "Hektor Peña <heckctor@gmail.com>",
   "license": "MIT",
-  "dependencies": {
+  "devDependencies": {
     "browser-sync": "^2.17.6",
     "cssnano": "^3.8.0",
     "gulp": "^3.9.1",

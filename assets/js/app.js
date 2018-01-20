@@ -1,0 +1,1 @@
+jQuery(document).ready(function(n){console.log("wBlank 1.0")});
