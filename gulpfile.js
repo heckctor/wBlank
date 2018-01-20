@@ -54,9 +54,10 @@ plugPostcss = [
   cssnano({
     autoprefixer: {
       add: true,
-      browsers: 'last 2 versions'
+      browsers: "last 2 versions"
     },
     core: true,
+    discardComments: false,
   })
 ];
  
