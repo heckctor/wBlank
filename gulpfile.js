@@ -27,6 +27,14 @@ const gulp = require('gulp'),
       minifier = require('gulp-uglify/minifier'),
       pump = require('pump');
 
+/*Variables de Configuracion*/
+var themeName = "blah";
+
+//Ftp
+var url_fpt = "hektor.com.mx";
+var user_ftp ="hektorco";
+var pass_ftp ="65#4sdf%654dsf54#";
+
 
 /* * * * *
 
@@ -153,24 +161,26 @@ Tarea: Conexion FTP
 
 
 
-var user = process.env.FTP_USER='';
-var password = process.env.FTP_PWD='';
-var host = '';
+var user = process.env.FTP_USER= user_ftp;
+var password = process.env.FTP_PWD=pass_ftp;
+var host = url_fpt;
 var port = 21;
 var dirLocales = [
-  './assets/*/**' ,
-  './assets/*/*/**' ,
-  './assets/*/**/*' ,
+  './assets/**',
+  './languages/*',
+  './template-parts/*',
   './*',
   //omitir carpetas y archivos (anteponer simbolo !)
-  '!./src' ,
-  '!./bloques' ,
-  '!./node_modules' ,
-  '!./gulpfile.js' ,
-  '!./package.json' ,
-  '!./yarn.lock'
+  '!.src' ,
+  '!node_modules' ,
+  '!bower_components' ,
+  '!gulpfile.js' ,
+  '!package.json' ,
+  '!bower.json' ,
+  '!README.md' ,
+  '!yarn.lock'
   ];
-var dirRemoto = '/public_html/'
+var dirRemoto = '/public_html/wp-content/themes/' + themeName + '/';
  
 //función auxiliar para construir una conexión FTP
 //basada en nuestra configuración
@@ -238,7 +248,30 @@ gulp.task('remote',['styles', 'scripts'] , () =>{
   gulp.watch('./*.php').on('change', browserSync.reload);
 });
 
+/**
+ * 
+ * Tarea remote
+ *
+ */
+gulp.task('remote', ['styles', 'scripts'], () => {
+  browserSync.init({
+    server: './',
+    port: 8080,
+    open: false,
+    socket: {
+      domain: 'localhost:8080'
+    }
+  });
+  gulp.watch('./**', ['styles']).on('change', browserSync.reload);
+  gulp.watch('./assets/js/**', ['scripts']).on('change', browserSync.reload);
+  gulp.watch('./*.php').on('change', browserSync.reload);
+});
+
 gulp.task('sync', [ 'styles', 'images', 'scripts', 'ftp'] , function() {
+});
+/* tarea sinconizacion en desarrollo */
+gulp.task('sync:dev', ['browser-sync', 'styles', 'images', 'scripts', 'ftp'], function () {
+  gulp.watch(dirList, ['bs-reload']);
 });
 /* * * * *
 

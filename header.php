@@ -1,10 +1,17 @@
+<?php 
+$random = rand(1,100000); 
+$version = '?resetCache='.$random;
+echo $version;
+?>
+
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
 <meta charset="<?php bloginfo( 'charset' ); ?>" />
 <meta name="viewport" content="width=device-width" />
-<link rel="stylesheet" type="text/css" href="<?php echo get_stylesheet_uri(); ?>" />
 <?php wp_head(); ?>
+<link rel="stylesheet" type="text/css" href="<?php echo get_stylesheet_uri() . $version; ?>" />
+<script src="<?php echo get_stylesheet_directory_uri() .'/assets/js/app.js' . $version; ?>"></script>
 </head>
 <body <?php body_class(); ?>>
 <div id="wrapper" class="hfeed">
