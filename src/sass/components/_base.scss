@@ -1,0 +1,75 @@
+*,
+figure{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    box-sizing: border-box;
+}
+* {
+    outline: none;
+    &:focus {
+        outline: none;
+    }
+}
+
+body,
+html {
+    height: 100%;
+    min-height: 100%;
+}
+
+body {
+    overflow-x: hidden; //previene el scroll al margen derecho
+    position: relative;
+    width: 100vw;
+    height: 100%;
+    min-height: 100%;
+    font-family: helvetica;
+    background:white;
+    min-width: 320px;
+    @include font(16);
+}
+
+a { 
+    text-decoration: none;
+    cursor: pointer;
+    outline:none;
+}
+
+a:visited {
+    outline: none;
+}
+a:focus {
+    outline: thin dotted;
+    outline: none;
+}
+a:active,
+a:focus,
+a:hover {
+    text-decoration: none;
+    outline: none;
+}
+
+a:active,
+a:hover {
+    outline: 0;
+}
+
+.browserupgrade {
+  margin: 0.2em 0;
+  background: #222222;
+  color: lightgoldenrodyellow;
+  padding: 3em;
+  strong{
+      color:tomato;
+  }
+  a{
+      background:lightgoldenrodyellow;
+      color:#222222;
+      padding: 1em;
+      margin:0 .5em;
+  }
+}
+
+
+

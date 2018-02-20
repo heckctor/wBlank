@@ -1,282 +1,152 @@
-const gulp = require('gulp'),
-       //plugins servidor local y sincronización automática
-      browserSync = require('browser-sync')
-
-      //Plugins para FTP
-      ftp = require('vinyl-ftp'),
-      gutil = require('gulp-util'),
- 
-      //PLugins para compilar scss
-      plumber = require('gulp-plumber'),
-      sass = require('gulp-sass'),
- 
-      //Plugins para optimizar imágenes
-      imagemin = require('gulp-imagemin'),
-      cache = require('gulp-cache'),
- 
-      //PLugins Post CSS
-      postcss = require('gulp-postcss'),
-      cssnano = require('cssnano'),//autoprefixer
-
-      //Concatenar JS
-      concat = require('gulp-concat'),
-      rename = require('gulp-rename'),
-
-      //comprimir JS
-      uglifyjs = require('uglify-js'),
-      minifier = require('gulp-uglify/minifier'),
-      pump = require('pump');
-
-/*Variables de Configuracion*/
-var themeName = "blah";
-
-//Ftp
-var url_fpt = "hektor.com.mx";
-var user_ftp ="hektorco";
-var pass_ftp ="65#4sdf%654dsf54#";
+var gulp = require('gulp');
+var sass = require('gulp-sass');
+var browserSync = require('browser-sync');
+var concat = require('gulp-concat');
+var imagemin = require('gulp-imagemin');
+var pngquant = require('imagemin-pngquant');
+var plumber = require('gulp-plumber');
+var sourcemaps = require('gulp-sourcemaps');
+var path = require('path');
+var gutil = require('gulp-util');
+var ftp = require('vinyl-ftp');
+var uglify = require('gulp-uglify');
+var svgmin = require('gulp-svgmin');
+var inject = require('gulp-inject');
+var svgstore = require('gulp-svgstore');
+var notify = require('gulp-notify');
 
 
-/* * * * *
+var gulpftp = require('./ftp-config.js');
 
-Tarea: Compilar / Minificar Sass
 
-* * * * */
+gulp.task('svgstore', function () {
+    var svgs = gulp
+        .src('/src/images/svg/*.svg')
+        .pipe(svgmin(function (file) {
+            var prefix = path.basename(file.relative, path.extname(file.relative));
+            return {
+                plugins: [{
+                    cleanupIDs: {
+                        prefix: prefix + '-',
+                        minify: true
+                    }
+                }]
+            }
+        }))
+        .pipe(svgstore({ inlineSvg: true }));
 
-//---> compilando archivos scss
-gulp.task('sass',() =>
-  gulp.src('.src/sass/**/*.scss')
-      .pipe(plumber({
-        errorHandler: function(error) {
-            console.log(error.message);
-            this.emit('end');
-        }
-      }))
-      .pipe(sass())
-      .pipe(gulp.dest('.src/.dev/css/'))
-);
-//---> Fin scss
- 
- 
-//---> PostCss
-plugPostcss = [
-  cssnano({
-    autoprefixer: {
-      add: true,
-      browsers: "last 2 versions"
-    },
-    core: true,
-    discardComments: false,
-  })
+    function fileContents(filePath, file) {
+        return file.contents.toString();
+    }
+
+    return gulp
+        .src('*.html')
+        .pipe(inject(svgs, { transform: fileContents }))
+        .pipe(gulp.dest('./theme'));
+
+});
+
+
+gulp.task('sass', function () {
+    gulp.src('./src/sass/**/*')
+        .pipe(sourcemaps.init())
+        .pipe(plumber())
+        .pipe(sass({ outputStyle: 'compressed' }))
+        .pipe(concat('style.css'))
+        .pipe(sourcemaps.write('../../../src/sass/maps'))
+        .pipe(gulp.dest('./theme/'))
+        .pipe(notify({ message: 'Finished minifying Styles' }));
+});
+
+
+var conn = ftp.create({
+    host: gulpftp.config.host,
+    user: gulpftp.config.user,
+    password: gulpftp.config.pass,
+    parallel: 8,
+    log: gutil.log
+});
+
+/* list all files you wish to ftp in the glob variable */
+var globs = [
+    './theme/**/*',
+    './theme/**',
+    './theme/*'
 ];
- 
-gulp.task('postcss',() =>
-  gulp.src('.src/.dev/css/*.css')
-      .pipe(postcss(plugPostcss))
-      .pipe(gulp.dest('./'))
-);
-//---> Fin PostCss
+var remoteLocation = 'public_html/' + gulpftp.config.subdirectory +'/wp-content/themes/' + gulpftp.config.theme_name;
 
-gulp.task('styles', function() {
-    gulp.watch('.src/sass/**/*.scss', ['sass']);
-    gulp.watch('.src/.dev/css/**/*.css', ['postcss']);
+// using base = '.' will transfer everything to /public_html correctly
+// turn off buffering in gulp.src for best performance
+
+gulp.task('deploy-dev', function () {
+    console.log(gulpftp);
+    return gulp.src(globs, { base: './theme', buffer: false })
+        .pipe(conn.newer(remoteLocation)) // only upload newer files
+        .pipe(conn.dest(remoteLocation))
+        .pipe(notify("Dev site updated"));
 });
 
-// Fin Compilar / Minificar Sass
-
-
-
-
-
-/* * * * *
-
-Tarea: Optimizar imagenes
-
-* * * * */
-gulp.task('images', function() {
-    gulp.src('.src/images/**/*')
-        .pipe(cache(imagemin({
-          optimizationLevel: 7,
-          progressive: true,
-          interlaced: true })))
-        .pipe(gulp.dest('./assets/images/'));
+gulp.task('deploy-watch', function () {
+    console.log(gulpftp);
+    gulp.watch(globs).on('change', function (event) {
+        console.log('Changes detected! Uploading file "' + event.path + '", ' + event.type);
+        return gulp.src([event.path], { base: './theme', buffer: false })
+            .pipe(conn.newer(remoteLocation)) // only upload newer files
+            .pipe(conn.dest(remoteLocation))
+            .pipe(notify("Dev site updated on fly"));
+    });
 });
-//Fin Optimizar imagenes
 
 
 
+gulp.task('browser-sync', () => {
+    browserSync.init({
+        server: './theme/',
+        port: 7777,
+        open: false,
+        socket: {
+            domain: 'localhost:7777'
+        }
+    });
+    gulp.watch(globs).on('change', browserSync.reload);
+});
 
-/* * * * *
 
-Tarea: Optimizar Scripts
 
-* * * * */
+gulp.task('imagemin', function () {
+    return gulp.src(['./src/images/**', '!images/{optimized,optimized/**}'])
+        .pipe(imagemin({
+            progressive: true,
+            svgoPlugins: [{ removeViewBox: false }],
+            use: [pngquant(
+                {
+                    quality: '65-80', 
+                    speed: 4
+                }
+            )]
+        }))
+        .pipe(gulp.dest('./theme/assets/images/'));
+});
 
 var jsFiles = [
-  //Librerias
-  '/bower_components/jquery/dist/jquery.min.js', 
-  //Codigo del sitio
-  '.src/js/app.js'
-  ],  
-    jsDest = '.src/.dev/js';
+    "./node_modules/jquery/dist/jquery.min.js",
+    "./src/js/app.js"
+];
 
-gulp.task('concat-js', function() {  
-    return gulp.src(jsFiles)
-        .pipe(concat('scripts.js'))
-        .pipe(gulp.dest(jsDest));
+gulp.task('minifyJs', function () {
+    return gulp.src(jsFiles) //select all javascript files under js/ and any subdirectory
+        .pipe(sourcemaps.init())
+        .pipe(concat('app.min.js')) //the name of the resulting file
+        .pipe(uglify())
+        .pipe(sourcemaps.write('./'))
+        .pipe(gulp.dest('./theme/assets/js/')) //the destination folder
+        .pipe(notify({ message: 'Finished minifying app JavaScript' }));
 });
 
-//Comprimir JS
-gulp.task('compress-js', function (cb) {
-  // the same options as described above 
-  var options = {
-    preserveComments: 'true'
-  };
- 
-  pump([
-      //gulp.src('.src/.dev/js/*.js'),
-      gulp.src('.src/js/**/*.js'),//Comprimir todos los JS
-      minifier(options, uglifyjs),
-      gulp.dest('assets/js/')
-    ],
-    cb
-  );
-});
-
-gulp.task('scripts', function() {
-    gulp.watch(jsFiles, ['concat-js']);
-    gulp.watch('.src/.dev/js/*.js', ['compress-js']);
-});
-//Fin Optimizar scripts
 
 
-
-
-
-/* * * * *
-
-Tarea: Conexion FTP
-
-* * * * */
-//Configuración de conexion
-
-
-
-var user = process.env.FTP_USER= user_ftp;
-var password = process.env.FTP_PWD=pass_ftp;
-var host = url_fpt;
-var port = 21;
-var dirLocales = [
-  './assets/**',
-  './languages/*',
-  './template-parts/*',
-  './*',
-  //omitir carpetas y archivos (anteponer simbolo !)
-  '!.src' ,
-  '!node_modules' ,
-  '!bower_components' ,
-  '!gulpfile.js' ,
-  '!package.json' ,
-  '!bower.json' ,
-  '!README.md' ,
-  '!yarn.lock'
-  ];
-var dirRemoto = '/public_html/wp-content/themes/' + themeName + '/';
- 
-//función auxiliar para construir una conexión FTP
-//basada en nuestra configuración
-function getFtpConnection() {
-    return ftp.create({
-        host: host,
-        port: port,
-        user: user,
-        password: password,
-        parallel: 50,
-        maxConnections:100,
-        log: gutil.log
-    });
-}
- 
-/**
- * Implementando la tarea
- * Copia los archivos al servidor
- *
- */
- gulp.task('upload', function() {
-     var conn = getFtpConnection();
-     return gulp.src(dirLocales, { base: './', buffer: false })
-         .pipe(conn.newer(dirRemoto)) // Sube todo
-         .pipe(conn.dest(dirRemoto));
- });
- /**
-   * Observa la copia local para los cambios y
-   copia los nuevos archivos al servidor cada vez
-   que se detecta un cambio
- **/
- gulp.task('ftp-changes', function() {
-     var conn = getFtpConnection();
-     gulp.watch(dirLocales)
-         .on('change', function(event) {
-             console.log('Cambios detectados! Subiendo Archivo "' + event.path + '", ' + event.type);
-             return gulp.src([event.path], { base: './', buffer: false })
-                 .pipe(conn.newer(dirRemoto)) // Solo sube archivos más recientes
-                 .pipe(conn.dest(dirRemoto));
-                 
-         });
- });
-
- gulp.task('ftp', ['ftp-changes'], function() {
-    
-});
-//---> Fin FTP
-
-/**
- * 
- * Tarea remote
- *
- */
-gulp.task('remote',['styles', 'scripts'] , () =>{
-  browserSync.init({
-    server: './',
-    port:8080,
-    open:false,
-    socket:{
-      domain: 'localhost:8080'
-    }
-  });
-  gulp.watch('./**',['styles']).on('change', browserSync.reload);
-  gulp.watch('./assets/js/**',['scripts']).on('change', browserSync.reload);
-  gulp.watch('./*.php').on('change', browserSync.reload);
-});
-
-/**
- * 
- * Tarea remote
- *
- */
-gulp.task('remote', ['styles', 'scripts'], () => {
-  browserSync.init({
-    server: './',
-    port: 8080,
-    open: false,
-    socket: {
-      domain: 'localhost:8080'
-    }
-  });
-  gulp.watch('./**', ['styles']).on('change', browserSync.reload);
-  gulp.watch('./assets/js/**', ['scripts']).on('change', browserSync.reload);
-  gulp.watch('./*.php').on('change', browserSync.reload);
-});
-
-gulp.task('sync', [ 'styles', 'images', 'scripts', 'ftp'] , function() {
-});
-/* tarea sinconizacion en desarrollo */
-gulp.task('sync:dev', ['browser-sync', 'styles', 'images', 'scripts', 'ftp'], function () {
-  gulp.watch(dirList, ['bs-reload']);
-});
-/* * * * *
-
-Tarea: default
-
-* * * * */
-gulp.task('default', ['styles', 'images', 'scripts'] , function() {
+gulp.task('default', ['browser-sync'], function () {
+    gulp.watch("./src/sass/**/*", ['sass']);
+    gulp.watch(["./src/js/*", "!js/production.min.js", "!js/production.min.js.map"], ['minifyJs']); // minify JS when JS changes
+    gulp.watch(["./src/images/*", '!images/{optimized,optimized/**}'], ['imagemin']); // optimize images when images change
 });

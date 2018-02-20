@@ -1,0 +1,15 @@
+.is-center-content{
+   display: flex;
+   justify-content: center;
+   align-items: center;
+ }
+ %fa{
+    font-family: FontAwesome;
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: inherit;
+ }
+ %margin-auto{
+   margin-left: auto;
+   margin-right: auto;
+ }
