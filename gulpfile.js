@@ -14,6 +14,7 @@ var svgmin = require('gulp-svgmin');
 var inject = require('gulp-inject');
 var svgstore = require('gulp-svgstore');
 var notify = require('gulp-notify');
+var runSequence = require('run-sequence');
 
 
 var gulpftp = require('./ftp-config.js');
@@ -149,4 +150,17 @@ gulp.task('default', ['browser-sync'], function () {
     gulp.watch("./src/sass/**/*", ['sass']);
     gulp.watch(["./src/js/*", "!js/production.min.js", "!js/production.min.js.map"], ['minifyJs']); // minify JS when JS changes
     gulp.watch(["./src/images/*", '!images/{optimized,optimized/**}'], ['imagemin']); // optimize images when images change
+});
+
+gulp.task('watch-files', function () {
+    gulp.watch("./src/sass/**/*", ['sass']);
+    gulp.watch(["./src/js/*", "!js/production.min.js", "!js/production.min.js.map"], ['minifyJs']); // minify JS when JS changes
+    gulp.watch(["./src/images/*", '!images/{optimized,optimized/**}'], ['imagemin']); // optimize images when images change
+});
+
+gulp.task('develop', function (done) {
+    runSequence('watch-files', 'deploy-watch', 'browser-sync', function () {
+        console.log('Run something else');
+        done();
+    });
 });

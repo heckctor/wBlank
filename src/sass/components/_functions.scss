@@ -1,0 +1,3 @@
+@function img($name-image){
+    @return url($img + $name-image); 
+}

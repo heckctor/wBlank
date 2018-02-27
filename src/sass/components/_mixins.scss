@@ -52,3 +52,19 @@
     background: -moz-linear-gradient($angulo,$colorA,$colorB,$colorC)$imagen;
     background: linear-gradient($angulo,$colorA,$colorB,$colorC)$imagen;
 }
+
+@mixin grid($child,$cols){
+    display:flex;
+    flex-wrap: wrap;
+
+    @if $child == li {
+        padding-left:0;
+        margin-top:0;
+        margin-bottom:0;
+        list-style:none         
+    }
+
+    #{$child}{
+        width: (100% / $cols);
+    }                                                            
+}

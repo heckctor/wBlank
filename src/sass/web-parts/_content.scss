@@ -1,3 +1,3 @@
-body{
-    background: khaki;
+ul{
+    @include grid('li',9);
 }
